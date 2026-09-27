@@ -1,0 +1,6 @@
+.env
+credentials.json
+token.pickle
+checkpoints.db
+complaints.json
+chroma_data/
