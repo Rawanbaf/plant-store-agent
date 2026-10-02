@@ -7,7 +7,14 @@ from sentence_transformers import SentenceTransformer
 load_dotenv()
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-embed_model = SentenceTransformer('all-MiniLM-L6-v2')
+
+_embed_model = None
+
+def get_embed_model():
+    global _embed_model
+    if _embed_model is None:
+        _embed_model = SentenceTransformer('all-MiniLM-L6-v2')
+    return _embed_model
 
 chroma_client = chromadb.PersistentClient(path="./chroma_data")
 collection = chroma_client.get_or_create_collection(name="plant_store_knowledge")
@@ -23,7 +30,7 @@ Keep answers concise and direct, written for an employee who needs a quick, usef
 
 
 def ask_question(question: str, n_results: int = 5) -> str:
-    query_embedding = embed_model.encode([question]).tolist()
+    query_embedding = get_embed_model().encode([question]).tolist()
 
     results = collection.query(
         query_embeddings=query_embedding,
