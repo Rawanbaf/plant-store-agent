@@ -1,190 +1,47 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Plant Store Dashboard</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <div class="layout">
-        <aside class="sidebar">
-            <div class="brand">
-                <div class="brand-icon">P</div>
-                <span class="brand-name">Plant Store</span>
-            </div>
+{% extends "base.html" %}
 
-            <div class="search-box">
-                <form method="get" action="/">
-                    <input type="hidden" name="team" value="{{ team_filter }}">
-                    <input type="text" name="search" placeholder="Search tickets..." value="{{ search }}">
-                </form>
-            </div>
+{% block title %}Tickets | Plant Store Dashboard{% endblock %}
 
-            <p class="section-label">SPACES</p>
-            <a href="/?team=all&status={{ status_filter }}" class="nav-item {% if team_filter == 'all' %}active{% endif %}">
-                <span class="dot dot-all"></span>All tickets
-            </a>
-            <a href="/?team=stock_team&status={{ status_filter }}" class="nav-item {% if team_filter == 'stock_team' %}active{% endif %}">
-                <span class="dot dot-stock"></span>Stock
-            </a>
-            <a href="/?team=quality_team&status={{ status_filter }}" class="nav-item {% if team_filter == 'quality_team' %}active{% endif %}">
-                <span class="dot dot-quality"></span>Quality
-            </a>
-            <a href="/?team=finance_team&status={{ status_filter }}" class="nav-item {% if team_filter == 'finance_team' %}active{% endif %}">
-                <span class="dot dot-finance"></span>Finance
-            </a>
-
-            <p class="section-label">STATUS</p>
-            <a href="/?team={{ team_filter }}&status=pending" class="nav-item {% if status_filter == 'pending' %}active{% endif %}">Pending</a>
-            <a href="/?team={{ team_filter }}&status=resolved" class="nav-item {% if status_filter == 'resolved' %}active{% endif %}">Resolved</a>
-            <a href="/?team={{ team_filter }}&status=all" class="nav-item {% if status_filter == 'all' %}active{% endif %}">All</a>
-        </aside>
-
-        <main class="main">
-            <div class="header-row">
-                <div>
-                    <h1>Tickets</h1>
-                    <p class="subheading">{{ pending_count }} pending &middot; {{ resolved_count }} resolved</p>
-                </div>
-            </div>
-
-            <div class="stats-row">
-                <div class="stat-card">
-                    <p class="stat-label">PENDING</p>
-                    <p class="stat-value">{{ pending_count }}</p>
-                </div>
-                <div class="stat-card">
-                    <p class="stat-label">RESOLVED</p>
-                    <p class="stat-value">{{ resolved_count }}</p>
-                </div>
-                <div class="stat-card highlight">
-                    <p class="stat-label">NEEDS REVIEW</p>
-                    <p class="stat-value">{{ low_confidence_count }}</p>
-                </div>
-            </div>
-
-            {% if complaints|length == 0 %}
-            <p class="empty-state">No tickets here.</p>
-            {% endif %}
-
-            {% for c in complaints %}
-            <div class="ticket-card">
-                <div class="ticket-header">
-                    <div class="ticket-title-row">
-                        <span class="dot dot-{{ c.team.split('_')[0] }}"></span>
-                        <p class="ticket-title">{{ c.item }} &middot; Order {{ c.order_number }}</p>
-                    </div>
-                    <span class="time-label">{{ c.time_ago }} ago</span>
-                </div>
-                <p class="ticket-summary">{{ c.summary }}</p>
-
-                {% if c.confidence < 0.7 and c.status == 'pending' %}
-                <p class="confidence-warning">AI wasn't fully confident here, please double check the category</p>
-                {% endif %}
-
-                <details class="email-details">
-                    <summary>View full email</summary>
-                    <p class="full-email">{{ c.full_email }}</p>
-                </details>
-
-                            {% if c.status not in ['Restocked', 'Replacement Sent', 'Refund Issued', 'Refund Denied', 'Not Available'] %}
-            <form method="post" action="/update_status/{{ c.id }}?team={{ team_filter }}&status={{ status_filter }}">
-                <p class="note-title">Add a note for the customer <span>(optional)</span></p>
-                <p class="note-hint">Choose an outcome below. If you add a note, we'll generate a personalized reply using it, otherwise a standard message is sent.</p>
-                <textarea name="employee_note" placeholder="e.g. order was outside the 30-day window, offered 20% discount instead..."></textarea>
-
-                <div class="status-buttons">
-                    {% for option in team_status_options[c.team] %}
-                    <button type="submit" name="status" value="{{ option }}" class="status-btn">{{ option }}</button>
-                    {% endfor %}
-                </div>
-            </form>
-            {% else %}
-                <p class="resolved-label">Status: {{ c.status }}</p>
-                {% endif %}
-            </div>
-            {% endfor %}
-        </main>
+{% block content %}
+<div class="header-row">
+    <div>
+        <h1>Tickets</h1>
+        <p class="subheading">{{ pending_count }} pending &middot; {{ resolved_count }} resolved</p>
     </div>
+</div>
 
-    <div class="chat-widget">
-                <button class="chat-toggle" id="chatToggle">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="4" r="1"></circle>
-                <line x1="12" y1="5" x2="12" y2="7"></line>
-                <rect x="5" y="7" width="14" height="11" rx="3"></rect>
-                <circle cx="9" cy="12.5" r="1.2" fill="currentColor"></circle>
-                <circle cx="15" cy="12.5" r="1.2" fill="currentColor"></circle>
-                <path d="M9 15.5 Q12 17.5 15 15.5"></path>
-                <line x1="2" y1="12" x2="5" y2="12"></line>
-                <line x1="19" y1="12" x2="22" y2="12"></line>
-            </svg>
-        </button>
+<div class="stats-row">
+    <div class="stat-card">
+        <p class="stat-label">PENDING</p>
+        <p class="stat-value">{{ pending_count }}</p>
+    </div>
+    <div class="stat-card">
+        <p class="stat-label">RESOLVED</p>
+        <p class="stat-value">{{ resolved_count }}</p>
+    </div>
+    <div class="stat-card highlight">
+        <p class="stat-label">NEEDS REVIEW</p>
+        <p class="stat-value">{{ low_confidence_count }}</p>
+    </div>
+</div>
 
-        <div class="chat-panel" id="chatPanel">
-            <div class="chat-header">
-                <p class="chat-title">Ask AI</p>
-                <p class="chat-subtitle">Past complaints, store policy, or plant care</p>
-                <button class="chat-close" id="chatClose">&times;</button>
-            </div>
+{% if complaints|length == 0 %}
+<p class="empty-state">No tickets here.</p>
+{% endif %}
 
-            <div class="chat-messages" id="chatMessages">
-                <div class="chat-bubble bot">Hi! Ask me about a past complaint, store policy, or plant care.</div>
-            </div>
-
-            <form class="chat-input-row" id="chatForm">
-                <input type="text" id="chatInput" placeholder="Type a question..." autocomplete="off">
-                <button type="submit">Send</button>
-            </form>
+{% for c in complaints %}
+<a href="/ticket/{{ c.id }}" class="ticket-row">
+    <div class="ticket-row-main">
+        <span class="dot dot-{{ c.team.split('_')[0] }}"></span>
+        <div>
+            <p class="ticket-title">{{ c.item|item_name }} &middot; {{ c.order_number|order_label }}</p>
+            <p class="ticket-row-sub">{{ team_labels[c.team] }} team</p>
         </div>
     </div>
-
-    <script>
-        const toggle = document.getElementById('chatToggle');
-        const panel = document.getElementById('chatPanel');
-        const closeBtn = document.getElementById('chatClose');
-        const form = document.getElementById('chatForm');
-        const input = document.getElementById('chatInput');
-        const messages = document.getElementById('chatMessages');
-
-        toggle.addEventListener('click', () => panel.classList.toggle('open'));
-        closeBtn.addEventListener('click', () => panel.classList.remove('open'));
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const question = input.value.trim();
-            if (!question) return;
-
-            const userBubble = document.createElement('div');
-            userBubble.className = 'chat-bubble user';
-            userBubble.textContent = question;
-            messages.appendChild(userBubble);
-
-            input.value = '';
-            messages.scrollTop = messages.scrollHeight;
-
-            const loadingBubble = document.createElement('div');
-            loadingBubble.className = 'chat-bubble bot';
-            loadingBubble.textContent = 'Thinking...';
-            messages.appendChild(loadingBubble);
-            messages.scrollTop = messages.scrollHeight;
-
-            try {
-                const response = await fetch('/api/ask', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ question })
-                });
-                const data = await response.json();
-                loadingBubble.textContent = data.answer;
-            } catch (err) {
-                loadingBubble.textContent = 'Something went wrong, please try again.';
-            }
-
-            messages.scrollTop = messages.scrollHeight;
-        });
-    </script>
-</body>
-</html>
+    <div class="ticket-row-meta">
+        <span class="status-pill">{{ 'Pending' if c.status == 'pending' else c.status }}</span>
+        <span class="time-label">{{ c.time_ago }} ago</span>
+    </div>
+</a>
+{% endfor %}
+{% endblock %}

@@ -4,3 +4,7 @@ token.pickle
 checkpoints.db
 complaints.json
 chroma_data/
+__pycache__/
+processed_ids.txt
+paused_threads.txt
+ignored_emails.log

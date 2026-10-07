@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Ticket | Plant Store Dashboard{% endblock %}
+
+{% block content %}
+<a href="/" class="back-link">&larr; Back to tickets</a>
+
+<div class="detail-grid">
+    <div class="detail-left">
+        <div class="detail-card">
+            <div class="detail-top">
+                <span class="category-pill">{{ c.category.replace('_', ' ').capitalize() }}</span>
+                <span class="time-label">{{ c.time_ago }} ago</span>
+            </div>
+            <h1 class="detail-title">{{ c.item|item_name }}</h1>
+            <p class="detail-sub">{{ c.order_number|order_label }} &middot; {{ team_labels[c.team] }} team</p>
+            <p class="detail-summary">{{ c.summary }}</p>
+
+            {% if c.confidence < 0.7 and not is_resolved %}
+            <p class="confidence-warning">AI wasn't fully confident here, please double check the category</p>
+            {% endif %}
+
+            <details class="email-details">
+                <summary>View full email</summary>
+                <p class="full-email">{{ c.full_email }}</p>
+            </details>
+        </div>
+
+        <div class="detail-card">
+            {% if not is_resolved %}
+            <form method="post" action="/update_status/{{ c.id }}">
+                <p class="card-label">UPDATE STATUS</p>
+                <div class="status-buttons">
+                    {% for option in team_status_options[c.team] %}
+                    <button type="submit" name="status" value="{{ option }}" class="status-btn">{{ option }}</button>
+                    {% endfor %}
+                </div>
+
+                <label class="note-label" for="employee_note">Note for the customer <span>(optional)</span></label>
+                <p class="note-hint">Add a note and the reply will be personalized with it. Leave it empty to send a standard message.</p>
+                <textarea id="employee_note" name="employee_note" class="note-input" placeholder="e.g. order was outside the 30-day window, offered 20% discount instead"></textarea>
+            </form>
+            {% else %}
+            <p class="card-label">STATUS</p>
+            <p class="resolved-label">{{ c.status }}</p>
+            {% if c.employee_note %}
+            <p class="resolved-note">Note sent to the customer: {{ c.employee_note }}</p>
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="detail-right">
+        <div class="side-card">
+            <p class="card-label">SIMILAR PAST TICKETS</p>
+            {% if similar_tickets|length == 0 %}
+            <p class="side-empty">No similar tickets yet.</p>
+            {% else %}
+            {% for s in similar_tickets %}
+            <a href="/ticket/{{ s.id }}" class="side-item">
+                <p class="side-item-title">{{ s.item|item_name }} &middot; {{ s.order_number|order_label }}</p>
+                <p class="side-item-sub">{{ 'Still pending' if s.status == 'pending' else 'Resolved: ' ~ s.status }}</p>
+                {% if s.employee_note %}
+                <p class="side-item-note">{{ s.employee_note|truncate(80) }}</p>
+                {% endif %}
+            </a>
+            {% endfor %}
+            {% endif %}
+        </div>
+
+        <div class="side-card">
+            <p class="card-label">CUSTOMER HISTORY</p>
+            <p class="side-email">{{ c.sender_email }}</p>
+
+            {% if history_total == 0 %}
+            <p class="side-empty">First ticket from this customer.</p>
+            {% else %}
+            {% for h in history_recent %}
+            <a href="/ticket/{{ h.id }}" class="side-item">
+                <p class="side-item-title">{{ h.item|item_name }} &middot; {{ h.order_number|order_label }}</p>
+                <p class="side-item-sub">{{ 'Pending' if h.status == 'pending' else h.status }}</p>
+            </a>
+            {% endfor %}
+            {% if history_total > 3 %}
+            <a href="/?team=all&status=all&search={{ c.sender_email|urlencode }}" class="side-link">View all {{ history_total }} tickets &rarr;</a>
+            {% endif %}
+            {% endif %}
+        </div>
+
+        <div class="side-card">
+            {% set steps = events|length + (0 if is_resolved else 1) %}
+            <details class="timeline-details">
+                <summary>TICKET TIMELINE &middot; {{ steps }} step{{ '' if steps == 1 else 's' }}</summary>
+
+                {% if events|length == 0 %}
+                <p class="side-empty timeline-empty">No timeline was recorded for this ticket.</p>
+                {% endif %}
+
+                <div class="timeline">
+                    {% for e in events %}
+                    <div class="tl-step">
+                        <span class="tl-dot"></span>
+                        <p class="tl-label">{{ e.label }}</p>
+                        <p class="tl-time">{{ e.time|clock }}{% if e.detail %} &middot; {{ e.detail }}{% endif %}</p>
+                    </div>
+                    {% endfor %}
+
+                    {% if not is_resolved %}
+                    <div class="tl-step">
+                        <span class="tl-dot current"></span>
+                        <p class="tl-label tl-current">Waiting for employee</p>
+                        <p class="tl-time">In progress</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </details>
+        </div>
+    </div>
+</div>
+{% endblock %}

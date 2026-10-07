@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics | Plant Store Dashboard{% endblock %}
+
+{% block content %}
+<div class="header-row">
+    <div>
+        <h1>Analytics</h1>
+        <p class="subheading">Overview of complaint volume and resolution</p>
+    </div>
+</div>
+
+<div class="stats-row">
+    <div class="stat-card">
+        <p class="stat-label">TOTAL TICKETS</p>
+        <p class="stat-value">{{ total }}</p>
+    </div>
+    <div class="stat-card">
+        <p class="stat-label">AVG RESOLUTION</p>
+        <p class="stat-value">{{ avg_resolution }}</p>
+    </div>
+    <div class="stat-card">
+        <p class="stat-label">HIGH CONFIDENCE</p>
+        <p class="stat-value">{{ high_conf_pct }}</p>
+    </div>
+    <div class="stat-card highlight">
+        <p class="stat-label">NEEDS REVIEW</p>
+        <p class="stat-value">{{ needs_review }}</p>
+    </div>
+</div>
+
+<div class="chart-grid">
+    <div class="chart-card">
+        <p class="card-label">TICKETS BY TEAM</p>
+        <div class="chart-wrap">
+            <canvas id="teamChart"
+                    role="img"
+                    aria-label="Bar chart of tickets by team"
+                    data-labels='{{ team_names|tojson }}'
+                    data-values='{{ team_values|tojson }}'></canvas>
+        </div>
+    </div>
+    <div class="chart-card">
+        <p class="card-label">VOLUME, LAST 7 DAYS</p>
+        <div class="chart-wrap">
+            <canvas id="volumeChart"
+                    role="img"
+                    aria-label="Line chart of tickets per day over the last week"
+                    data-labels='{{ volume_labels|tojson }}'
+                    data-values='{{ volume_values|tojson }}'></canvas>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+    function readData(id) {
+        var el = document.getElementById(id);
+        return {
+            labels: JSON.parse(el.dataset.labels),
+            values: JSON.parse(el.dataset.values)
+        };
+    }
+
+    var axisText = { color: '#8A8371', font: { size: 11 } };
+
+    var team = readData('teamChart');
+    new Chart(document.getElementById('teamChart'), {
+        type: 'bar',
+        data: {
+            labels: team.labels,
+            datasets: [{
+                data: team.values,
+                backgroundColor: ['#7C8B6A', '#AE887B', '#C79B6E'],
+                borderRadius: 4,
+                barThickness: 36
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: '#F0EBE1' },
+                    ticks: { color: '#8A8371', font: { size: 11 }, precision: 0 }
+                },
+                x: { grid: { display: false }, ticks: axisText }
+            }
+        }
+    });
+
+    var volume = readData('volumeChart');
+    new Chart(document.getElementById('volumeChart'), {
+        type: 'line',
+        data: {
+            labels: volume.labels,
+            datasets: [{
+                data: volume.values,
+                borderColor: '#AE887B',
+                backgroundColor: 'rgba(174,136,123,0.12)',
+                fill: true,
+                tension: 0.35,
+                pointRadius: 3,
+                pointBackgroundColor: '#AE887B'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: '#F0EBE1' },
+                    ticks: { color: '#8A8371', font: { size: 11 }, precision: 0 }
+                },
+                x: { grid: { display: false }, ticks: axisText }
+            }
+        }
+    });
+</script>
+{% endblock %}

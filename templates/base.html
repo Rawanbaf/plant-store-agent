@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Plant Store Dashboard{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    {% set tf = team_filter|default('all') %}
+    {% set sf = status_filter|default('pending') %}
+    {% set page = active_page|default('') %}
+
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon">P</div>
+                <span class="brand-name">Plant Store</span>
+            </div>
+
+            <div class="search-box">
+                <form method="get" action="/">
+                    <input type="hidden" name="team" value="{{ tf }}">
+                    <input type="text" name="search" placeholder="Search tickets..." value="{{ search|default('') }}">
+                </form>
+            </div>
+
+            <p class="section-label">SPACES</p>
+            <a href="/?team=all&status={{ sf }}" class="nav-item {% if page == 'dashboard' and tf == 'all' %}active{% endif %}">
+                <span class="dot dot-all"></span>All tickets
+            </a>
+            <a href="/?team=stock_team&status={{ sf }}" class="nav-item {% if page == 'dashboard' and tf == 'stock_team' %}active{% endif %}">
+                <span class="dot dot-stock"></span>Stock
+            </a>
+            <a href="/?team=quality_team&status={{ sf }}" class="nav-item {% if page == 'dashboard' and tf == 'quality_team' %}active{% endif %}">
+                <span class="dot dot-quality"></span>Quality
+            </a>
+            <a href="/?team=finance_team&status={{ sf }}" class="nav-item {% if page == 'dashboard' and tf == 'finance_team' %}active{% endif %}">
+                <span class="dot dot-finance"></span>Finance
+            </a>
+
+            <p class="section-label">STATUS</p>
+            <a href="/?team={{ tf }}&status=pending" class="nav-item {% if page == 'dashboard' and sf == 'pending' %}active{% endif %}">Pending</a>
+            <a href="/?team={{ tf }}&status=resolved" class="nav-item {% if page == 'dashboard' and sf == 'resolved' %}active{% endif %}">Resolved</a>
+            <a href="/?team={{ tf }}&status=all" class="nav-item {% if page == 'dashboard' and sf == 'all' %}active{% endif %}">All</a>
+
+            <p class="section-label">TOOLS</p>
+            <a href="/analytics" class="nav-item {% if page == 'analytics' %}active{% endif %}">Analytics</a>
+        </aside>
+
+        <main class="main">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <div class="chat-widget">
+        <button class="chat-toggle" id="chatToggle" aria-label="Open assistant">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="4" r="1"></circle>
+                <line x1="12" y1="5" x2="12" y2="7"></line>
+                <rect x="5" y="7" width="14" height="11" rx="3"></rect>
+                <circle cx="9" cy="12.5" r="1.2" fill="currentColor"></circle>
+                <circle cx="15" cy="12.5" r="1.2" fill="currentColor"></circle>
+                <path d="M9 15.5 Q12 17.5 15 15.5"></path>
+                <line x1="2" y1="12" x2="5" y2="12"></line>
+                <line x1="19" y1="12" x2="22" y2="12"></line>
+            </svg>
+        </button>
+
+        <div class="chat-panel" id="chatPanel">
+            <div class="chat-header">
+                <p class="chat-title">Ask AI</p>
+                <p class="chat-subtitle">Past complaints, store policy, or plant care</p>
+                <button class="chat-close" id="chatClose">&times;</button>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <div class="chat-bubble bot">Hi! Ask me about a past complaint, store policy, or plant care.</div>
+            </div>
+
+            <form class="chat-input-row" id="chatForm">
+                <input type="text" id="chatInput" placeholder="Type a question..." autocomplete="off">
+                <button type="submit">Send</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const toggle = document.getElementById('chatToggle');
+        const panel = document.getElementById('chatPanel');
+        const closeBtn = document.getElementById('chatClose');
+        const form = document.getElementById('chatForm');
+        const input = document.getElementById('chatInput');
+        const messages = document.getElementById('chatMessages');
+
+        toggle.addEventListener('click', () => panel.classList.toggle('open'));
+        closeBtn.addEventListener('click', () => panel.classList.remove('open'));
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const question = input.value.trim();
+            if (!question) return;
+
+            const userBubble = document.createElement('div');
+            userBubble.className = 'chat-bubble user';
+            userBubble.textContent = question;
+            messages.appendChild(userBubble);
+
+            input.value = '';
+            messages.scrollTop = messages.scrollHeight;
+
+            const loadingBubble = document.createElement('div');
+            loadingBubble.className = 'chat-bubble bot';
+            loadingBubble.textContent = 'Thinking...';
+            messages.appendChild(loadingBubble);
+            messages.scrollTop = messages.scrollHeight;
+
+            try {
+                const response = await fetch('/api/ask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question })
+                });
+                const data = await response.json();
+                loadingBubble.textContent = data.answer;
+            } catch (err) {
+                loadingBubble.textContent = 'Something went wrong, please try again.';
+            }
+
+            messages.scrollTop = messages.scrollHeight;
+        });
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>
